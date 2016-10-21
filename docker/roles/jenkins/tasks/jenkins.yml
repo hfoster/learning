@@ -1,0 +1,8 @@
+- name: "Jenkins Master container"
+  docker:
+    name: jenkins-master
+    hostname: jenkins-master
+    image: jenkins
+    state: started
+    pull: missing
+    ports: 8080:8080,50000:50000

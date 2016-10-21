@@ -1,0 +1,13 @@
+- name: "Basic setup for Docker"
+  hosts: all
+  become: yes
+  become_method: sudo
+  roles:
+    - setup
+
+- name: "Setup a Jenkins Master container"
+  hosts: all
+  become: yes
+  become_method: sudo
+  roles:
+    - jenkins

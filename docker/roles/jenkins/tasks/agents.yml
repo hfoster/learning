@@ -1,0 +1,15 @@
+- name: "Build a CEntOS Agent container"
+  lxc_container:
+    name: jenkins-agent-centos
+    template: download
+    template_options: --dist centos --release 7 --arch amd64
+    container_log: true
+    state: started
+
+- name: "Build a Debian Agent container"
+  lxc_container:
+    name: jenkins-agent-debian
+    template: download
+    template_options: --dist debian --release wheezy --arch amd64
+    container_log: true
+    state: started
