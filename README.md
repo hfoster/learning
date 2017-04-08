@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/hfoster/learning.svg?branch=master)](https://travis-ci.org/hfoster/learning)
+
 # Learning
 This repository is intended to keep a record of DevOps-related tools and methods I've learned.
 
