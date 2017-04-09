@@ -1,4 +1,4 @@
-- name: "Build container from newly created image"
+- name: "Jenkins Agent container"
   docker:
     name: jenkins-agent
     hostname: jenkins-agent
