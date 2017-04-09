@@ -1,5 +1,5 @@
 - name: "Jenkins Master container"
-  docker_container:
+  docker:
     name: jenkins-master
     hostname: jenkins-master
     image: jenkins

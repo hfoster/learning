@@ -1,12 +1,8 @@
-- name: "Build Docker image for Jenkins Agent"
-  docker_image:
-    path: /vagrant/dockerfiles/jenkins-agent
-    name: jenkins-agent
-
 - name: "Build container from newly created image"
-  docker_container:
+  docker:
     name: jenkins-agent
-    image: jenkins-agent
+    hostname: jenkins-agent
+    image: hfoster/jenkins-agent:latest
+    pull: missing
     state: started
-    ports:
-      - "22"
+    ports: 22
