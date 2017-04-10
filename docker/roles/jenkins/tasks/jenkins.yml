@@ -6,3 +6,4 @@
     state: started
     pull: missing
     ports: 8080:8080,50000:50000
+    volumes: /home/jenkins
