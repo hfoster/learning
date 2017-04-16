@@ -3,3 +3,6 @@
 
 - name: "Install tools..."
   include: tools.yml
+
+- name: "Extra setup on Docker host"
+  include: user_env.yml

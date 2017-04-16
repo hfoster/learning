@@ -1,0 +1,9 @@
+- name: "Create passwordless Jenkins user"
+  user:
+    name: jenkins
+    shell: /bin/bash
+    group: jenkins
+    state: present
+    comment: "Jenkins CI user"
+    createhome: yes
+    home: /home/jenkins
