@@ -1,0 +1,69 @@
+- name: "Enable YUM caching"
+  lineinfile: dest=/etc/yum.conf regexp=^keepcache line=keepcache=1
+
+- name: "Add YUM repo for Docker Engine"
+  yum_repository:
+    name: dockerrepo
+    file: docker
+    description: Docker repository
+    baseurl: https://yum.dockerproject.org/repo/main/centos/$releasever/
+    gpgcheck: yes
+    gpgkey: https://yum.dockerproject.org/gpg
+    enabled: yes
+
+- name: "Add YUM repo for Kubernetes"
+  yum_repository:
+    name: virt7-docker-common-release
+    file: virt7-docker-common-release
+    description: Provides Kubernetes
+    baseurl: http://cbs.centos.org/repos/virt7-docker-common-release/x86_64/os/
+    gpgcheck: no
+    enabled: yes
+
+- name: "Add YUM repo for EPEL"
+  yum_repository:
+    name: epel
+    description: Extra Packages for Enterprise Linux
+    baseurl: http://download.fedoraproject.org/pub/epel/$releasever/$basearch
+    gpgcheck: yes
+    gpgkey: https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-7Server
+    enabled: yes
+
+- name: "YUM update"
+  yum: name=* state=latest disablerepo=extras
+
+- name: "(Don't)Install Docker Engine"
+  yum: name=docker-engine state=absent
+
+- name: "Install Kubernetes and friends"
+  yum:
+    name: etcd,kubernetes,flannel
+    state: latest
+    disablerepo: extras
+
+- name: "Make YUM cache"
+  command: "yum -y makecache"
+
+- name: "Enable and start Docker service"
+  service: name=docker enabled=yes state=started
+
+- name: "Install basic system tools"
+  yum:
+    name: wget,vim,docker-python,libvirt,lxc,lxc-devel,python2,python-devel,python-pip,gcc,debootstrap,perl,lxc-templates
+    state: latest
+
+- name: "Update pip"
+  pip:
+    name: pip
+    state: latest
+
+- name: "Install dependencies for LXC"
+  pip:
+    name: lxc-python2
+    state: latest
+
+- name: "Make sure libvirt daemon is running"
+  service: name=libvirtd enabled=yes state=restarted
+
+- name: "Make sure LXC daemon is running"
+  service: name=lxc enabled=yes state=started
