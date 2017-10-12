@@ -1,0 +1,2 @@
+- name: "Update the machines in our cluster to know about each other"
+  include: hosts.yml
