@@ -1,4 +1,4 @@
-- name: "Wait for hosts to restart"
+- name: "wait for hosts to restart"
   wait_for:
     delay: 60
     timeout: 300
