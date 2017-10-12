@@ -1,6 +1,9 @@
 - name: "Enable YUM caching"
   lineinfile: dest=/etc/yum.conf regexp=^keepcache line=keepcache=1
 
+- name: "Make YUM cache"
+  command: "yum -y makecache"
+
 - name: "Add YUM repo for Docker Engine"
   yum_repository:
     name: dockerrepo
@@ -31,18 +34,21 @@
 
 - name: "YUM update"
   yum: name=* state=latest disablerepo=extras
+  notify:
+    - update cache
 
 - name: "(Don't)Install Docker Engine"
   yum: name=docker-engine state=absent
+  notify:
+    - update cache
 
 - name: "Install Kubernetes and friends"
   yum:
     name: etcd,kubernetes,flannel
     state: latest
     disablerepo: extras
-
-- name: "Make YUM cache"
-  command: "yum -y makecache"
+  notify:
+    - update cache
 
 - name: "Enable and start Docker service"
   service: name=docker enabled=yes state=started
@@ -51,6 +57,8 @@
   yum:
     name: wget,vim,docker-python,libvirt,lxc,lxc-devel,python2,python-devel,python-pip,gcc,debootstrap,perl,lxc-templates
     state: latest
+  notify:
+    - update cache
 
 - name: "Update pip"
   pip:
