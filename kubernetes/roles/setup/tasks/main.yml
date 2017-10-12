@@ -1,5 +1,17 @@
 - name: "Setup networking"
   include: network.yml
 
+- name: "Disable SELinux and reboot"
+  selinux: state=disabled
+  notify:
+    - reboot host
+    - wait for host to restart
+
+- name: "Disable and stop firewalld"
+  service:
+    name: firewalld
+    enabled: no
+    state: stopped
+
 - name: "Install tools..."
   include: tools.yml

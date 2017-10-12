@@ -4,3 +4,10 @@
   become_method: sudo
   roles:
     - setup
+
+- name: "Configure the Kubernetes nodes"
+  hosts: all
+  become: yes
+  become_method: sudo
+  roles:
+    - kube_all_nodes
