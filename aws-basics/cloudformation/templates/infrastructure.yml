@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Full stack to host an EC2 running HashiCorp Packer
+
+Parameters:
+  Region:
+    Type: String
+    Description: Our Stack's Home Region
+    Default: "eu-west-1"
+  ImageId:
+    Type: String
+    Description: The default base AMI for launching instances
+    Default: "ami-2bc3a858"
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+    Default: "t2.micro"
+  KeyPair:
+    Type: String
+    Description: The SSH key pair used to access hosts
+    Default: "aws_test"
+
+Resources:
+  WorkingVPC:
+    Type: "AWS::EC2::VPC"
+    Properties:
+      CidrBlock: "172.64.0.0/16"
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: "default"
+
+  WorkingIGW:
+    Type: "AWS::EC2::InternetGateway"
+
+  VPCIGWLink:
+    Type: "AWS::EC2::VPCGatewayAttachment"
+    Properties:
+      InternetGatewayId: !Ref WorkingIGW
+      VpcId: !Ref WorkingVPC
+
+  MasterRouteTable:
+    Type: "AWS::EC2::RouteTable"
+    Properties:
+      VpcId: !Ref WorkingVPC
+
+  MasterEgressRoute:
+    Type: "AWS::EC2::Route"
+    Properties:
+      DestinationCidrBlock: "0.0.0.0/0"
+      GatewayId: !Ref WorkingIGW
+      RouteTableId: !Ref MasterRouteTable
+
+  PackerSG:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Security Group for Packer instance"
+      SecurityGroupEgress:
+        - CidrIp: "0.0.0.0/0"
+          Description: "Outbound HTTP rule"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - CidrIp: "0.0.0.0/0"
+          Description: "Outbound HTTPS rule"
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
+      SecurityGroupIngress:
+        - CidrIp: "0.0.0.0/0"
+          Description: "Inbound HTTP rule"
+          FromPort: 80
+          IpProtocol: "tcp"
+          ToPort: 80
+        - CidrIp: "0.0.0.0/0"
+          Description: "Inbound HTTPS rule"
+          FromPort: 443
+          IpProtocol: "tcp"
+          ToPort: 443
+        - CidrIp: "0.0.0.0/0"
+          Description: "Inbound SSH rule"
+          FromPort: 22
+          IpProtocol: "tcp"
+          ToPort: 22
+      VpcId: !Ref WorkingVPC
+
+  PublicSubnet1:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Join: ["", [!Ref Region, a]]
+      CidrBlock: "172.64.0.0/24"
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref WorkingVPC
+
+  PublicSubnet2:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Join: ["", [!Ref Region, b]]
+      CidrBlock: "172.64.1.0/24"
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref WorkingVPC
+
+  PublicSubnet3:
+    Type: "AWS::EC2::Subnet"
+    Properties:
+      AvailabilityZone:
+        Fn::Join: ["", [!Ref Region, c]]
+      CidrBlock: "172.64.2.0/24"
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref WorkingVPC
+
+  SubnetRouteTableAssoc1:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref MasterRouteTable
+      SubnetId: !Ref PublicSubnet1
+
+  SubnetRouteTableAssoc2:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref MasterRouteTable
+      SubnetId: !Ref PublicSubnet2
+
+  SubnetRouteTableAssoc3:
+    Type: "AWS::EC2::SubnetRouteTableAssociation"
+    Properties:
+      RouteTableId: !Ref MasterRouteTable
+      SubnetId: !Ref PublicSubnet3
+
+  PackerLaunchConf:
+    Type: "AWS::AutoScaling::LaunchConfiguration"
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceMonitoring: true
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyPair
+      SecurityGroups:
+        - !Ref PackerSG
+
+  PackerGroup:
+    Type: "AWS::AutoScaling::AutoScalingGroup"
+    Properties:
+      DesiredCapacity: "1"
+      HealthCheckGracePeriod: 60
+      HealthCheckType: "ELB"
+      LaunchConfigurationName: !Ref PackerLaunchConf
+      LoadBalancerNames:
+        - !Ref PackerELB
+      MaxSize: "1"
+      MinSize: "1"
+      VPCZoneIdentifier:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+        - !Ref PublicSubnet3
+
+  PackerELB:
+    Type: "AWS::ElasticLoadBalancing::LoadBalancer"
+    Properties:
+      ConnectionDrainingPolicy:
+        Enabled: false
+      CrossZone: true
+      HealthCheck:
+        HealthyThreshold: "3"
+        Interval: "60"
+        Target: "TCP:22"
+        Timeout: "45"
+        UnhealthyThreshold: "5"
+      Listeners:
+        - InstancePort: "80"
+          InstanceProtocol: "TCP"
+          LoadBalancerPort: "80"
+          Protocol: "TCP"
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+        - !Ref PublicSubnet3
