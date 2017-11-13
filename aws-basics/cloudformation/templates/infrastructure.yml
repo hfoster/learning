@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Full stack to host an EC2 running HashiCorp Packer
+Description: Full stack to host an EC2 in an ASG behind an ELB
 
 Parameters:
   Region:
@@ -13,7 +13,7 @@ Parameters:
   InstanceType:
     Type: String
     Description: EC2 instance type
-    Default: "t2.micro"
+    Default: "t2.nano"
   KeyPair:
     Type: String
     Description: The SSH key pair used to access hosts
@@ -49,10 +49,10 @@ Resources:
       GatewayId: !Ref WorkingIGW
       RouteTableId: !Ref MasterRouteTable
 
-  PackerSG:
+  InstanceSG:
     Type: "AWS::EC2::SecurityGroup"
     Properties:
-      GroupDescription: "Security Group for Packer instance"
+      GroupDescription: "Security Group for instance"
       SecurityGroupEgress:
         - CidrIp: "0.0.0.0/0"
           Description: "Outbound HTTP rule"
@@ -127,7 +127,7 @@ Resources:
       RouteTableId: !Ref MasterRouteTable
       SubnetId: !Ref PublicSubnet3
 
-  PackerLaunchConf:
+  InstanceLaunchConf:
     Type: "AWS::AutoScaling::LaunchConfiguration"
     Properties:
       ImageId: !Ref ImageId
@@ -135,17 +135,17 @@ Resources:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyPair
       SecurityGroups:
-        - !Ref PackerSG
+        - !Ref InstanceSG
 
-  PackerGroup:
+  InstanceGroup:
     Type: "AWS::AutoScaling::AutoScalingGroup"
     Properties:
       DesiredCapacity: "1"
       HealthCheckGracePeriod: 60
       HealthCheckType: "ELB"
-      LaunchConfigurationName: !Ref PackerLaunchConf
+      LaunchConfigurationName: !Ref InstanceLaunchConf
       LoadBalancerNames:
-        - !Ref PackerELB
+        - !Ref InstanceELB
       MaxSize: "1"
       MinSize: "1"
       VPCZoneIdentifier:
@@ -153,7 +153,7 @@ Resources:
         - !Ref PublicSubnet2
         - !Ref PublicSubnet3
 
-  PackerELB:
+  InstanceELB:
     Type: "AWS::ElasticLoadBalancing::LoadBalancer"
     Properties:
       ConnectionDrainingPolicy:
